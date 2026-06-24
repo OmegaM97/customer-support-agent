@@ -119,6 +119,7 @@ Escalation should be true if:
 - issue cannot be solved automatically
 - information is missing
 - security concerns exist
+-anything belong to money, account, changing data should be escalated
 
 {resolution_parser.get_format_instructions()}
 """

@@ -1,8 +1,10 @@
 from typing import TypedDict
 
-from langgraph.graph import StateGraph
-from langgraph.graph import START
-from langgraph.graph import END
+from langgraph.graph import (
+    StateGraph,
+    START,
+    END
+)
 
 from triage_agent import triage_agent
 
@@ -12,6 +14,14 @@ from specialized_agents import (
     feature_request_agent,
     knowledge_agent,
     account_management_agent
+)
+
+from escalation_agent import (
+    escalation_agent
+)
+
+from response_agent import (
+    response_agent
 )
 
 
@@ -30,13 +40,28 @@ class SupportState(TypedDict):
 
     escalation_required: bool
 
+    escalation_details: dict
+
+    final_response: str
+
 
 def route_ticket(state):
 
     return state["category"]
 
 
-builder = StateGraph(SupportState)
+def route_escalation(state):
+
+    if state["escalation_required"]:
+        return "escalate"
+
+    return "respond"
+
+
+builder = StateGraph(
+    SupportState
+)
+
 
 builder.add_node(
     "triage",
@@ -68,10 +93,22 @@ builder.add_node(
     account_management_agent
 )
 
+builder.add_node(
+    "escalation",
+    escalation_agent
+)
+
+builder.add_node(
+    "response",
+    response_agent
+)
+
+
 builder.add_edge(
     START,
     "triage"
 )
+
 
 builder.add_conditional_edges(
     "triage",
@@ -85,30 +122,63 @@ builder.add_conditional_edges(
     }
 )
 
-builder.add_edge(
+
+builder.add_conditional_edges(
     "billing",
-    END
+    route_escalation,
+    {
+        "escalate": "escalation",
+        "respond": "response"
+    }
 )
 
-builder.add_edge(
+builder.add_conditional_edges(
     "technical",
-    END
+    route_escalation,
+    {
+        "escalate": "escalation",
+        "respond": "response"
+    }
 )
 
-builder.add_edge(
+builder.add_conditional_edges(
     "feature_request",
-    END
+    route_escalation,
+    {
+        "escalate": "escalation",
+        "respond": "response"
+    }
 )
 
-builder.add_edge(
+builder.add_conditional_edges(
     "knowledge",
-    END
+    route_escalation,
+    {
+        "escalate": "escalation",
+        "respond": "response"
+    }
+)
+
+builder.add_conditional_edges(
+    "account_management",
+    route_escalation,
+    {
+        "escalate": "escalation",
+        "respond": "response"
+    }
+)
+
+
+builder.add_edge(
+    "escalation",
+    "response"
 )
 
 builder.add_edge(
-    "account_management",
+    "response",
     END
 )
+
 
 graph = builder.compile()
 
@@ -125,5 +195,8 @@ if __name__ == "__main__":
         initial_state
     )
 
-    print("\n=== FINAL STATE ===")
+    print("\n===================")
+    print("FINAL STATE")
+    print("===================")
+
     print(result)
