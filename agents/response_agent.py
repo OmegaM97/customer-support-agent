@@ -35,7 +35,7 @@ Escalation Details:
 {escalation_details}
 
 Human Approval for Escalation:
-{state["human_approved"]}
+{"yes" if state.get("human_approved") else "no"}
 
 Generate a professional customer response.
 

@@ -2,6 +2,10 @@ from typing import TypedDict, Annotated
 from operator import add
 import sqlite3
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 from langgraph.graph import (
     StateGraph,
     START,
@@ -214,10 +218,10 @@ if __name__ == "__main__":
     init_database()
 
     initial_state = {
-        "ticket_id": "T-1001",
-        "customer_id": "C-500",
-        "message": "I was charged twice for my subscription.",
-        "billing_results": []
+    "ticket_id": "T-1007",
+    "customer_id": "C-505",
+    "message": "Our entire production environment has been down for 6 hours after the latest update and all customer data appears inaccessible.",
+    "billing_results": []
     }
 
     result = graph.invoke(

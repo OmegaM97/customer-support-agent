@@ -10,6 +10,8 @@ langchain-groq = "*"
 python-dotenv = "*"
 requests = "*"
 langgraph-checkpoint-sqlite = "*"
+streamlit = "*"
+pandas = "*"
 
 [dev-packages]
 
