@@ -43,7 +43,9 @@ class SupportState(TypedDict):
 
     category: str
 
+    selected_tool: str
     tool_result: dict
+    
 
     resolution: str
     confidence: float
