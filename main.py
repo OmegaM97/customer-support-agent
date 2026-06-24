@@ -6,9 +6,9 @@ from langgraph.graph import (
     END
 )
 
-from triage_agent import triage_agent
+from agents.triage_agent import triage_agent
 
-from specialized_agents import (
+from agents.specialized_agents import (
     billing_agent,
     technical_agent,
     feature_request_agent,
@@ -16,11 +16,11 @@ from specialized_agents import (
     account_management_agent
 )
 
-from escalation_agent import (
+from agents.escalation_agent import (
     escalation_agent
 )
 
-from response_agent import (
+from agents.response_agent import (
     response_agent
 )
 

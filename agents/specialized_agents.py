@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from langchain_groq import ChatGroq
 from langchain_core.output_parsers import JsonOutputParser
 
-from tools import (
+from tools.specialized_agents_tools import (
     lookup_subscription,
     search_known_issues,
     feature_catalog_lookup,
