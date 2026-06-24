@@ -1,44 +1,48 @@
+from pydantic import BaseModel
+
 from langchain_groq import ChatGroq
-from langchain_core.messages import HumanMessage
-import json
+from langchain_core.output_parsers import JsonOutputParser
 
 
 llm = ChatGroq(
-    model="llama-3.3-70b-versatile",
+    model="openai/gpt-oss-20b",
     temperature=0
+)
+
+
+class TriageOutput(BaseModel):
+    category: str
+
+
+parser = JsonOutputParser(
+    pydantic_object=TriageOutput
 )
 
 
 def triage_agent(state):
 
-    message = state["message"]
-
     prompt = f"""
 You are a customer support triage agent.
 
-Classify the customer ticket into exactly one category.
+Classify the ticket into exactly one category.
 
-Possible categories:
+Available Categories:
+
 - Billing
 - Technical Issue
 - Feature Request
 - General Inquiry
 - Account Management
 
+{parser.get_format_instructions()}
+
 Ticket:
-{message}
-
-Return ONLY valid JSON.
-
-Example:
-{{
-    "category":"Billing"
-}}
+{state["message"]}
 """
 
-    response = llm.invoke([HumanMessage(content=prompt)])
+    response = llm.invoke(prompt)
 
-    result = json.loads(response.content)
+    result = parser.parse(response.content)
 
     state["category"] = result["category"]
 

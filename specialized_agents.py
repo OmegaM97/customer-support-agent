@@ -1,7 +1,7 @@
-import json
+from pydantic import BaseModel
 
 from langchain_groq import ChatGroq
-from langchain_core.messages import HumanMessage
+from langchain_core.output_parsers import JsonOutputParser
 
 from tools import (
     lookup_subscription,
@@ -13,8 +13,28 @@ from tools import (
 
 
 llm = ChatGroq(
-    model="llama-3.3-70b-versatile",
+    model="openai/gpt-oss-20b",
     temperature=0
+)
+
+
+class ToolDecision(BaseModel):
+    use_tool: bool
+    argument: str
+
+
+class AgentResolution(BaseModel):
+    resolution: str
+    confidence: float
+    escalation_required: bool
+
+
+tool_parser = JsonOutputParser(
+    pydantic_object=ToolDecision
+)
+
+resolution_parser = JsonOutputParser(
+    pydantic_object=AgentResolution
 )
 
 
@@ -42,86 +62,99 @@ Ticket:
 Customer ID:
 {state["customer_id"]}
 
-You have access to one tool:
-
+Available Tool:
 {tool_name}
 
-Determine if the tool should be used.
+Decide whether the tool should be used.
 
-Return ONLY JSON.
+If the tool should be used:
+- use_tool must be true
+- provide the correct argument
 
-Example:
-{{
-    "use_tool": true,
-    "argument": "C-500"
-}}
+If the tool should not be used:
+- use_tool must be false
+- argument must be empty
 
-or
-
-{{
-    "use_tool": false,
-    "argument": ""
-}}
+{tool_parser.get_format_instructions()}
 """
 
-    tool_decision = llm.invoke(
-        [HumanMessage(content=tool_prompt)]
+    tool_response = llm.invoke(
+        tool_prompt
     )
 
-    tool_decision = json.loads(tool_decision.content)
+    tool_decision = tool_parser.parse(
+        tool_response.content
+    )
 
     tool_result = {}
 
     if tool_decision["use_tool"]:
 
-        argument = tool_decision["argument"]
-
-        tool_result = TOOLS[tool_name](argument)
+        tool_result = TOOLS[tool_name](
+            tool_decision["argument"]
+        )
 
     state["tool_result"] = tool_result
 
     resolution_prompt = f"""
 You are the {agent_name}.
 
-Ticket:
+Customer Ticket:
 {state["message"]}
 
 Tool Result:
 {tool_result}
 
-Generate:
+Analyze the issue.
 
-1. resolution
-2. confidence between 0 and 1
-3. escalation_required
+Provide:
 
-Return ONLY JSON.
+- resolution
+- confidence between 0 and 1
+- escalation_required
 
-Example:
+Escalation should be true if:
 
-{{
-    "resolution":"Refund initiated.",
-    "confidence":0.92,
-    "escalation_required":false
-}}
+- issue is complex
+- issue cannot be solved automatically
+- information is missing
+- security concerns exist
+
+{resolution_parser.get_format_instructions()}
 """
 
-    final_response = llm.invoke(
-        [HumanMessage(content=resolution_prompt)]
+    resolution_response = llm.invoke(
+        resolution_prompt
     )
 
-    final_response = json.loads(
-        final_response.content
+    final_response = resolution_parser.parse(
+        resolution_response.content
     )
 
     state["resolution"] = final_response["resolution"]
     state["confidence"] = final_response["confidence"]
-    state["escalation_required"] = final_response["escalation_required"]
+    state["escalation_required"] = (
+        final_response["escalation_required"]
+    )
+
+    print(f"\n=== {agent_name.upper()} ===")
+    print("Tool Result:")
+    print(tool_result)
+
+    print("\nResolution:")
+    print(state["resolution"])
+
+    print("\nConfidence:")
+    print(state["confidence"])
+
+    print("\nEscalation Required:")
+    print(state["escalation_required"])
 
     return state
 
 
 def billing_agent(state):
+
     return run_agent(
         state,
         "Billing Agent",
@@ -130,6 +163,7 @@ def billing_agent(state):
 
 
 def technical_agent(state):
+
     return run_agent(
         state,
         "Technical Agent",
@@ -138,6 +172,7 @@ def technical_agent(state):
 
 
 def feature_request_agent(state):
+
     return run_agent(
         state,
         "Feature Request Agent",
@@ -146,6 +181,7 @@ def feature_request_agent(state):
 
 
 def knowledge_agent(state):
+
     return run_agent(
         state,
         "Knowledge Agent",
@@ -154,6 +190,7 @@ def knowledge_agent(state):
 
 
 def account_management_agent(state):
+
     return run_agent(
         state,
         "Account Management Agent",
