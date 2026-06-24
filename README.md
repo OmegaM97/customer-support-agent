@@ -154,7 +154,7 @@ Final output:
 
 Business hours are Monday to Friday, 9:00 AM to 5:00 PM Eastern Time. Support is available 24/7 via live chat and email.
 
-### 5. Escalated Case
+### 5. Account Management
 
 Input:
 
@@ -173,4 +173,25 @@ Path:
 
 Final output:
 
-Update your email in Settings > Email, then confirm through the verification link. The request was escalated to Tier 2 Support.
+To update your email address, log in to your account, go to Settings > Email, enter the new email address, and confirm the change with the verification link. The request was escalated to Tier 2 Support.
+
+### 6. Escalated Technical Issue
+
+Input:
+
+```python
+initial_state = {
+    "ticket_id": "T-1007",
+    "customer_id": "C-505",
+    "message": "Our entire production environment has been down for 6 hours after the latest update and all customer data appears inaccessible.",
+    "billing_results": []
+}
+```
+
+Path:
+
+`triage -> technical -> human_approval -> escalation -> response -> save_to_db`
+
+Final output:
+
+The production environment is down after the latest update and customer data is inaccessible. The team should roll back the recent update, verify database connectivity, restore the latest backup if needed, and continue monitoring after recovery. The ticket was escalated to Tier 2 Support.
