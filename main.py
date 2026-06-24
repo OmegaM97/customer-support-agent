@@ -39,9 +39,6 @@ from agents.save_to_db_agent import save_to_db_agent
 from persistence import init_database
 
 
-# ----------------------------
-# STATE
-# ----------------------------
 class SupportState(TypedDict):
 
     ticket_id: str
@@ -67,9 +64,6 @@ class SupportState(TypedDict):
     final_response: str
 
 
-# ----------------------------
-# ROUTING
-# ----------------------------
 def route_ticket(state):
     return state["category"]
 
@@ -82,9 +76,6 @@ def route_human_approval(state):
     return "escalate" if state.get("human_approved") else "respond"
 
 
-# ----------------------------
-# GRAPH
-# ----------------------------
 builder = StateGraph(SupportState)
 
 builder.add_node("triage", triage_agent)
@@ -196,9 +187,6 @@ builder.add_edge("response", "save_to_db")
 builder.add_edge("save_to_db", END)
 
 
-# ----------------------------
-# CHECKPOINTER (FIXED)
-# ----------------------------
 conn = sqlite3.connect(
     "langgraph_checkpoints.db",
     check_same_thread=False
@@ -218,7 +206,7 @@ if __name__ == "__main__":
     init_database()
 
     initial_state = {
-    "ticket_id": "T-1007",
+    "ticket_id": "T-1008",
     "customer_id": "C-505",
     "message": "Our entire production environment has been down for 6 hours after the latest update and all customer data appears inaccessible.",
     "billing_results": []

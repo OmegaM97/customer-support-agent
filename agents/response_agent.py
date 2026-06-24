@@ -45,6 +45,8 @@ Mention:
 2. Resolution summary
 3. Any next actions
 4. Escalation status
+5. only escalted if both escalation_required and human_approved are true
+6. and dont add those your name, company name thing just good response
 """
 
     response = llm.invoke(prompt)

@@ -33,9 +33,6 @@ if df.empty:
     st.warning("No ticket data found.")
     st.stop()
 
-# =====================
-# KPI CALCULATIONS
-# =====================
 
 total_tickets = len(df)
 
@@ -59,9 +56,6 @@ resolution_rate = (
 
 avg_confidence = df["confidence"].mean()
 
-# =====================
-# KPI CARDS
-# =====================
 
 col1, col2, col3, col4 = st.columns(4)
 
@@ -87,9 +81,6 @@ col4.metric(
 
 st.divider()
 
-# =====================
-# CATEGORY CHART
-# =====================
 
 st.subheader("Ticket Categories")
 
@@ -108,10 +99,6 @@ st.bar_chart(
     category_counts.set_index("Category")
 )
 
-# =====================
-# ESCALATION BREAKDOWN
-# =====================
-
 st.subheader("Escalation Breakdown")
 
 escalation_data = pd.DataFrame({
@@ -127,10 +114,6 @@ st.dataframe(
     use_container_width=True
 )
 
-# =====================
-# CONFIDENCE BY CATEGORY
-# =====================
-
 st.subheader("Average Confidence by Category")
 
 confidence_by_category = (
@@ -141,9 +124,6 @@ confidence_by_category = (
 
 st.bar_chart(confidence_by_category)
 
-# =====================
-# RECENT TICKETS
-# =====================
 
 st.subheader("Recent Tickets")
 
