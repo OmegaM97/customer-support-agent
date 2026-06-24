@@ -16,6 +16,10 @@ from agents.specialized_agents import (
     account_management_agent
 )
 
+from agents.human_approval_agent import (
+    human_approval_agent
+)
+
 from agents.escalation_agent import (
     escalation_agent
 )
@@ -46,6 +50,8 @@ class SupportState(TypedDict):
 
     escalation_required: bool
 
+    human_approved: bool
+
     escalation_details: dict
 
     final_response: str
@@ -59,6 +65,14 @@ def route_ticket(state):
 def route_escalation(state):
 
     if state["escalation_required"]:
+        return "escalate"
+
+    return "respond"
+
+
+def route_human_approval(state):
+
+    if state["human_approved"]:
         return "escalate"
 
     return "respond"
@@ -100,6 +114,11 @@ builder.add_node(
 )
 
 builder.add_node(
+    "human_approval",
+    human_approval_agent
+)
+
+builder.add_node(
     "escalation",
     escalation_agent
 )
@@ -138,7 +157,7 @@ builder.add_conditional_edges(
     "billing",
     route_escalation,
     {
-        "escalate": "escalation",
+        "escalate": "human_approval",
         "respond": "response"
     }
 )
@@ -147,7 +166,7 @@ builder.add_conditional_edges(
     "technical",
     route_escalation,
     {
-        "escalate": "escalation",
+        "escalate": "human_approval",
         "respond": "response"
     }
 )
@@ -156,7 +175,7 @@ builder.add_conditional_edges(
     "feature_request",
     route_escalation,
     {
-        "escalate": "escalation",
+        "escalate": "human_approval",
         "respond": "response"
     }
 )
@@ -165,7 +184,7 @@ builder.add_conditional_edges(
     "knowledge",
     route_escalation,
     {
-        "escalate": "escalation",
+        "escalate": "human_approval",
         "respond": "response"
     }
 )
@@ -173,6 +192,16 @@ builder.add_conditional_edges(
 builder.add_conditional_edges(
     "account_management",
     route_escalation,
+    {
+        "escalate": "human_approval",
+        "respond": "response"
+    }
+)
+
+
+builder.add_conditional_edges(
+    "human_approval",
+    route_human_approval,
     {
         "escalate": "escalation",
         "respond": "response"
@@ -201,7 +230,6 @@ graph = builder.compile()
 
 if __name__ == "__main__":
 
-    # Initialize database
     init_database()
 
     initial_state = {
