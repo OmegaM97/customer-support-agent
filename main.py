@@ -1,11 +1,14 @@
 from typing import TypedDict, Annotated
 from operator import add
+import sqlite3
 
 from langgraph.graph import (
     StateGraph,
     START,
     END
 )
+
+from langgraph.checkpoint.sqlite import SqliteSaver
 
 from agents.triage_agent import triage_agent
 
@@ -24,25 +27,17 @@ from agents.specialized_agents import (
     account_management_agent
 )
 
-from agents.human_approval_agent import (
-    human_approval_agent
-)
-
-from agents.escalation_agent import (
-    escalation_agent
-)
-
-from agents.response_agent import (
-    response_agent
-)
-
-from agents.save_to_db_agent import (
-    save_to_db_agent
-)
+from agents.human_approval_agent import human_approval_agent
+from agents.escalation_agent import escalation_agent
+from agents.response_agent import response_agent
+from agents.save_to_db_agent import save_to_db_agent
 
 from persistence import init_database
 
 
+# ----------------------------
+# STATE
+# ----------------------------
 class SupportState(TypedDict):
 
     ticket_id: str
@@ -54,10 +49,7 @@ class SupportState(TypedDict):
     selected_tool: str
     tool_result: dict
 
-    billing_results: Annotated[
-        list,
-        add
-    ]
+    billing_results: Annotated[list, add]
 
     resolution: str
     confidence: float
@@ -71,109 +63,50 @@ class SupportState(TypedDict):
     final_response: str
 
 
+# ----------------------------
+# ROUTING
+# ----------------------------
 def route_ticket(state):
-
     return state["category"]
 
 
 def route_escalation(state):
-
-    if state["escalation_required"]:
-        return "escalate"
-
-    return "respond"
+    return "escalate" if state.get("escalation_required") else "respond"
 
 
 def route_human_approval(state):
-
-    if state["human_approved"]:
-        return "escalate"
-
-    return "respond"
+    return "escalate" if state.get("human_approved") else "respond"
 
 
-builder = StateGraph(
-    SupportState
-)
+# ----------------------------
+# GRAPH
+# ----------------------------
+builder = StateGraph(SupportState)
+
+builder.add_node("triage", triage_agent)
+
+builder.add_node("billing_router", billing_router)
+builder.add_node("billing_subscription", billing_subscription_agent)
+builder.add_node("billing_payment", billing_payment_agent)
+builder.add_node("billing_refund", billing_refund_agent)
+builder.add_node("billing_merge", billing_merge_agent)
+
+builder.add_node("technical", technical_agent)
+builder.add_node("feature_request", feature_request_agent)
+builder.add_node("knowledge", knowledge_agent)
+builder.add_node("account_management", account_management_agent)
+
+builder.add_node("human_approval", human_approval_agent)
+builder.add_node("escalation", escalation_agent)
+builder.add_node("response", response_agent)
+builder.add_node("save_to_db", save_to_db_agent)
 
 
-builder.add_node(
-    "triage",
-    triage_agent
-)
-
-builder.add_node(
-    "billing_router",
-    billing_router
-)
-
-builder.add_node(
-    "billing_subscription",
-    billing_subscription_agent
-)
-
-builder.add_node(
-    "billing_payment",
-    billing_payment_agent
-)
-
-builder.add_node(
-    "billing_refund",
-    billing_refund_agent
-)
-
-builder.add_node(
-    "billing_merge",
-    billing_merge_agent
-)
-
-builder.add_node(
-    "technical",
-    technical_agent
-)
-
-builder.add_node(
-    "feature_request",
-    feature_request_agent
-)
-
-builder.add_node(
-    "knowledge",
-    knowledge_agent
-)
-
-builder.add_node(
-    "account_management",
-    account_management_agent
-)
-
-builder.add_node(
-    "human_approval",
-    human_approval_agent
-)
-
-builder.add_node(
-    "escalation",
-    escalation_agent
-)
-
-builder.add_node(
-    "response",
-    response_agent
-)
-
-builder.add_node(
-    "save_to_db",
-    save_to_db_agent
-)
+# START
+builder.add_edge(START, "triage")
 
 
-builder.add_edge(
-    START,
-    "triage"
-)
-
-
+# TRIAGE ROUTING
 builder.add_conditional_edges(
     "triage",
     route_ticket,
@@ -187,37 +120,17 @@ builder.add_conditional_edges(
 )
 
 
-builder.add_edge(
-    "billing_router",
-    "billing_subscription"
-)
+# BILLING FAN-OUT / FAN-IN
+builder.add_edge("billing_router", "billing_subscription")
+builder.add_edge("billing_router", "billing_payment")
+builder.add_edge("billing_router", "billing_refund")
 
-builder.add_edge(
-    "billing_router",
-    "billing_payment"
-)
-
-builder.add_edge(
-    "billing_router",
-    "billing_refund"
-)
-
-builder.add_edge(
-    "billing_subscription",
-    "billing_merge"
-)
-
-builder.add_edge(
-    "billing_payment",
-    "billing_merge"
-)
-
-builder.add_edge(
-    "billing_refund",
-    "billing_merge"
-)
+builder.add_edge("billing_subscription", "billing_merge")
+builder.add_edge("billing_payment", "billing_merge")
+builder.add_edge("billing_refund", "billing_merge")
 
 
+# ESCALATION FLOW
 builder.add_conditional_edges(
     "billing_merge",
     route_escalation,
@@ -226,7 +139,6 @@ builder.add_conditional_edges(
         "respond": "response"
     }
 )
-
 
 builder.add_conditional_edges(
     "technical",
@@ -265,6 +177,7 @@ builder.add_conditional_edges(
 )
 
 
+# HUMAN APPROVAL
 builder.add_conditional_edges(
     "human_approval",
     route_human_approval,
@@ -274,26 +187,28 @@ builder.add_conditional_edges(
     }
 )
 
+builder.add_edge("escalation", "response")
+builder.add_edge("response", "save_to_db")
+builder.add_edge("save_to_db", END)
 
-builder.add_edge(
-    "escalation",
-    "response"
+
+# ----------------------------
+# CHECKPOINTER (FIXED)
+# ----------------------------
+conn = sqlite3.connect(
+    "langgraph_checkpoints.db",
+    check_same_thread=False
 )
 
-builder.add_edge(
-    "response",
-    "save_to_db"
-)
-
-builder.add_edge(
-    "save_to_db",
-    END
-)
+checkpointer = SqliteSaver(conn)
 
 
-graph = builder.compile()
+graph = builder.compile(checkpointer=checkpointer)
 
 
+# ----------------------------
+# RUN
+# ----------------------------
 if __name__ == "__main__":
 
     init_database()
@@ -306,11 +221,10 @@ if __name__ == "__main__":
     }
 
     result = graph.invoke(
-        initial_state
+        initial_state,
+        config={
+            "configurable": {
+                "thread_id": initial_state["ticket_id"]
+            }
+        }
     )
-
-    print("\n===================")
-    print("FINAL STATE")
-    print("===================")
-
-    print(result)

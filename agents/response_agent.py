@@ -34,6 +34,9 @@ Escalation Required:
 Escalation Details:
 {escalation_details}
 
+Human Approval for Escalation:
+{state["human_approved"]}
+
 Generate a professional customer response.
 
 Mention:

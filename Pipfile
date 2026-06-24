@@ -9,6 +9,7 @@ langchain = "*"
 langchain-groq = "*"
 python-dotenv = "*"
 requests = "*"
+langgraph-checkpoint-sqlite = "*"
 
 [dev-packages]
 

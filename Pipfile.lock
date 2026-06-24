@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "56b1aaf83b7a58e619e330365c998de48f8f4490a74ecc4e77d993648e8afda6"
+            "sha256": "5c69e0603c916a2c323be0ff3f38d8dd517b88e07fb0f00ebd77a9d54dc6ac75"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -16,6 +16,14 @@
         ]
     },
     "default": {
+        "aiosqlite": {
+            "hashes": [
+                "sha256:043e0bd78d32888c0a9ca90fc788b38796843360c855a7262a532813133a0650",
+                "sha256:21c002eb13823fad740196c5a2e9d8e62f6243bd9e7e4a1f87fb5e44ecb4fceb"
+            ],
+            "markers": "python_version >= '3.9'",
+            "version": "==0.22.1"
+        },
         "annotated-types": {
             "hashes": [
                 "sha256:1f02e8b43a8fbbc3f3e0d4f0f4bfc8131bcb4eebe8849b8e5c773f3a1c582a53",
@@ -289,6 +297,15 @@
             ],
             "markers": "python_version >= '3.10'",
             "version": "==4.1.1"
+        },
+        "langgraph-checkpoint-sqlite": {
+            "hashes": [
+                "sha256:cc9b40df0076feae8a9ad42ae713621b148b00ac23adc09dc1dc66090a46e5ad",
+                "sha256:f926916ebc1b985d802cc9c820026036e84db9d910d62c97b57e4ba64f67d5ae"
+            ],
+            "index": "pypi",
+            "markers": "python_version >= '3.10'",
+            "version": "==3.1.0"
         },
         "langgraph-prebuilt": {
             "hashes": [
@@ -703,6 +720,16 @@
             ],
             "markers": "python_version >= '3.7'",
             "version": "==1.3.1"
+        },
+        "sqlite-vec": {
+            "hashes": [
+                "sha256:1515727990b49e79bcaf75fdee2ffc7d461f8b66905013231251f1c8938e7786",
+                "sha256:1b62a7f0a060d9475575d4e599bbf94a13d85af896bc1ce86ee80d1b5b48e5fb",
+                "sha256:1d52e30513bae4cc9778ddbf6145610434081be4c3afe57cd877893bad9f6b6c",
+                "sha256:4a28dc12fa4b53d7b1dced22da2488fade444e96b5d16fd2d698cd670675cf32",
+                "sha256:4e921e592f24a5f9a18f590b6ddd530eb637e2d474e3b1972f9bbeb773aa3cb9"
+            ],
+            "version": "==0.1.9"
         },
         "tenacity": {
             "hashes": [
