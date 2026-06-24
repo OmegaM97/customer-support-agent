@@ -1,4 +1,5 @@
-from typing import TypedDict
+from typing import TypedDict, Annotated
+from operator import add
 
 from langgraph.graph import (
     StateGraph,
@@ -8,8 +9,15 @@ from langgraph.graph import (
 
 from agents.triage_agent import triage_agent
 
+from agents.billing_parallel_agents import (
+    billing_router,
+    billing_subscription_agent,
+    billing_payment_agent,
+    billing_refund_agent,
+    billing_merge_agent
+)
+
 from agents.specialized_agents import (
-    billing_agent,
     technical_agent,
     feature_request_agent,
     knowledge_agent,
@@ -45,7 +53,11 @@ class SupportState(TypedDict):
 
     selected_tool: str
     tool_result: dict
-    
+
+    billing_results: Annotated[
+        list,
+        add
+    ]
 
     resolution: str
     confidence: float
@@ -91,8 +103,28 @@ builder.add_node(
 )
 
 builder.add_node(
-    "billing",
-    billing_agent
+    "billing_router",
+    billing_router
+)
+
+builder.add_node(
+    "billing_subscription",
+    billing_subscription_agent
+)
+
+builder.add_node(
+    "billing_payment",
+    billing_payment_agent
+)
+
+builder.add_node(
+    "billing_refund",
+    billing_refund_agent
+)
+
+builder.add_node(
+    "billing_merge",
+    billing_merge_agent
 )
 
 builder.add_node(
@@ -146,7 +178,7 @@ builder.add_conditional_edges(
     "triage",
     route_ticket,
     {
-        "Billing": "billing",
+        "Billing": "billing_router",
         "Technical Issue": "technical",
         "Feature Request": "feature_request",
         "General Inquiry": "knowledge",
@@ -155,14 +187,46 @@ builder.add_conditional_edges(
 )
 
 
+builder.add_edge(
+    "billing_router",
+    "billing_subscription"
+)
+
+builder.add_edge(
+    "billing_router",
+    "billing_payment"
+)
+
+builder.add_edge(
+    "billing_router",
+    "billing_refund"
+)
+
+builder.add_edge(
+    "billing_subscription",
+    "billing_merge"
+)
+
+builder.add_edge(
+    "billing_payment",
+    "billing_merge"
+)
+
+builder.add_edge(
+    "billing_refund",
+    "billing_merge"
+)
+
+
 builder.add_conditional_edges(
-    "billing",
+    "billing_merge",
     route_escalation,
     {
         "escalate": "human_approval",
         "respond": "response"
     }
 )
+
 
 builder.add_conditional_edges(
     "technical",
@@ -237,7 +301,8 @@ if __name__ == "__main__":
     initial_state = {
         "ticket_id": "T-1001",
         "customer_id": "C-500",
-        "message": "I was charged twice for my subscription."
+        "message": "I was charged twice for my subscription.",
+        "billing_results": []
     }
 
     result = graph.invoke(
