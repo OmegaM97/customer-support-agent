@@ -24,6 +24,12 @@ from agents.response_agent import (
     response_agent
 )
 
+from agents.save_to_db_agent import (
+    save_to_db_agent
+)
+
+from persistence import init_database
+
 
 class SupportState(TypedDict):
 
@@ -103,6 +109,11 @@ builder.add_node(
     response_agent
 )
 
+builder.add_node(
+    "save_to_db",
+    save_to_db_agent
+)
+
 
 builder.add_edge(
     START,
@@ -176,6 +187,11 @@ builder.add_edge(
 
 builder.add_edge(
     "response",
+    "save_to_db"
+)
+
+builder.add_edge(
+    "save_to_db",
     END
 )
 
@@ -184,6 +200,9 @@ graph = builder.compile()
 
 
 if __name__ == "__main__":
+
+    # Initialize database
+    init_database()
 
     initial_state = {
         "ticket_id": "T-1001",
